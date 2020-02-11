@@ -46,8 +46,8 @@ class Habitica {
         if (!empty($newTaskParams['value'])) {
           $newTaskPostBody['value']=$newTaskParams['value'];
         }
-        if (!empty($newTaskParams['note'])) {
-          $newTaskPostBody['note']=$newTaskParams['note'];
+        if (!empty($newTaskParams['notes'])) {
+          $newTaskPostBody['notes']=$newTaskParams['notes'];
         }
 
         $newTaskPostBody = json_encode($newTaskPostBody);

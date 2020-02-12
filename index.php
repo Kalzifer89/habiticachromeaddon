@@ -86,10 +86,15 @@ if (isset($_POST["formsend"])) {
     }
   }
   //Array Daten nach Durchlauf der Aufgaben Aktualisieren
-  $Abfrage  = $SessionWithHabitica->userTasks($_GET['Type']);
+  if (isset($_GET["Type"])) {
+    $Abfrage  = $SessionWithHabitica->userTasks($_GET['Type']);
+  }else {
+      $Abfrage  = $SessionWithHabitica->userTasks('todos');
+  }
+
   $AnzahlArrayObjecte = count ($Abfrage["habitRPGData"]["data"]);
   $Notification = true;
-  $NotificationText = "Ihre Daten wurden erfolgreich übertragen";
+  $NotificationText = "Your Data was transmitted successfully.";
   //Ausführen wenn der New Task Button gedrückt wurde
 }elseif (isset($_POST["Title"]) && isset($_POST["Notes"])) {
   $aufgabenarray = ["type" =>  "todo", "text" => $_POST["Title"], "notes" => $_POST["Notes"]];
@@ -99,7 +104,7 @@ if (isset($_POST["formsend"])) {
   $AnzahlArrayObjecte = count ($Abfrage["habitRPGData"]["data"]);
   //Bestätigung Anzeigen
   $Notification = true;
-  $NotificationText = "Ihre Aufgabe wurden erfolgreich angelegt.";
+  $NotificationText = "Your ToDo was created successfully.";
 }elseif (isset($_POST["Title"])) {
   $aufgabenarray = ["type" =>  "todo", "text" => $_POST["Title"]];
   $SessionWithHabitica->newTask($aufgabenarray);
@@ -108,7 +113,7 @@ if (isset($_POST["formsend"])) {
   $AnzahlArrayObjecte = count ($Abfrage["habitRPGData"]["data"]);
   //Bestätigung
   $Notification = true;
-  $NotificationText = "Ihre Aufgabe wurden erfolgreich angelegt.";
+  $NotificationText = "Your ToDo was created successfully.";
   }
 else {
   $Notification = false;
@@ -131,7 +136,12 @@ $Overdue = false;
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <script type="text/javascript"></script>
+    <script type="text/javascript">
+  <?php if ($Notification) {
+    echo "    $(window).on('load',function(){\n";
+    echo "        $('#exampleModal').modal('show');\n";
+    echo "    });";} ?>
+  </script>
 </head>
 
 <body>
@@ -141,6 +151,10 @@ $Overdue = false;
   $(function () {
   $('[data-toggle="popover"]').popover()
   })
+  //Javaskript für Modal
+  $('#myModal').on('shown.bs.modal', function () {
+  $('#myInput').trigger('focus')
+})
 </script>
 
 <div class="row d-flex justify-content-left container">
@@ -161,13 +175,27 @@ $Overdue = false;
                   </li>
                 </ul>
             </div>
-            <?php
-            if ($Notification) {
-              echo " <div class=\"alert alert-success\" role=\"alert\">\n";
-              echo $NotificationText;
-              echo " </div>";
-            }
+                <!-- Modal Popup -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Your Changes</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <?php echo $NotificationText; ?>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
+            <?php
               //Check ob Benutzer Angemeldet ist, wenn nicht Login laden
               if (isset($_GET['Page']) && $_GET['Page'] == "addtask") {
                 include 'addtask.php';

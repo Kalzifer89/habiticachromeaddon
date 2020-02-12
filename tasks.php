@@ -141,6 +141,7 @@
       <input type="hidden" name="formsend" value="true">
       <div class="d-block text-right card-footer">
         <button type="submit" name="logout" value="true" class="mr-2 btn btn-danger float-left" >Logout</button>
-        <button type="submit" class="mr-2 btn btn-success" >Send</button>
+        <button type="submit" class="mr-2 btn btn-success">Send</button>
         <a class="btn btn-primary" href="index.php?Page=addtask" role="button">Add Task</a>
+
    </form>

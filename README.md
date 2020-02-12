@@ -15,3 +15,13 @@ Feel free to Feedback me @Kalzifer89 oder sven.krumbeck@gmail.com
 # Notes
 
 You just need the chomeAddon Folder, the Skrips are running on my Server und doing the Background Stuff. The Login Crecedentials are Stored with Coockies on your Browser.
+
+#Credits
+
+Based on :
+/*
+   * @author Rudd Fawcett <rudd.fawcett@gmail.com>
+   * @version 1.6
+   * @link http://github.com/ruddfawcett/Habitica.php
+   * @package Habitica.php
+*/

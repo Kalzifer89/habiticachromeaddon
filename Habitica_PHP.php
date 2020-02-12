@@ -11,11 +11,6 @@ class Habitica {
   public $apiToken;
   public $apiURL;
 
-//Zugangsdaten Bereitstellen
-//  $userId = "f860ec13-1ded-4d04-8d2b-3de25b4b58bf";
-//  $apiToken = "7c57125c-2568-462f-8638-8d75735955fb";
-
-
   /**
    * Creates a new Habitica instance
    */

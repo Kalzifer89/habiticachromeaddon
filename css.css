@@ -6,7 +6,6 @@ body {
     line-height: 1.5;
     color: #495057;
     text-align: left;
-    background-color: #6200EA
 }
 
 i {
@@ -14,7 +13,16 @@ i {
 }
 
 .container {
-    margin-top: 100px
+  padding: 0px;
+  margin: 0px;
+}
+
+.col-md-8 {
+  padding: 0px;
+}
+
+form {
+  margin-block-end: 0em;
 }
 
 .card {

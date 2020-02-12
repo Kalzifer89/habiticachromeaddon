@@ -1,9 +1,44 @@
 <?php
+
+session_start();
+
+//Habtica PHP API Includieren
 include 'Habitica_PHP.php';
 
-$SessionWithHabitica = new Habitica('f860ec13-1ded-4d04-8d2b-3de25b4b58bf','7c57125c-2568-462f-8638-8d75735955fb');
-$Abfrage  = $SessionWithHabitica->userTasks('todos');
 
+//Login Vorgang und API Daten in Coockie Speichern
+if (!isset($_COOKIE['LoggedIn'])) {
+      if (!empty($_POST['APIUser']) && !empty($_POST['APIToken'])) {
+        setcookie("LoggedIn", "True", 0);
+        setcookie("APIUser", $_POST['APIUser'], 0);
+        setcookie("APIToken", $_POST['APIToken'], 0);
+        echo "<meta http-equiv=\"refresh\" content=\"1; URL=index.php\">";
+      }
+}
+
+//Ausloggen wenn Logout Button gedrückt wird
+if (isset($_POST['logout'])) {
+  setcookie("LoggedIn", "", time() -3600);
+  setcookie("APIUser", "",time() -3600);
+  setcookie("APIToken", "",time() -3600);
+  session_destroy();
+  echo "<meta http-equiv=\"refresh\" content=\"1; URL=index.php\">";
+}
+
+//Wenn der Nutzer Eingelogt ist Aufgaben Abfragen
+if (isset($_COOKIE['LoggedIn'])) {
+  //Checken ob ein bestimmter Aufgaben Typ ausgewählt ist
+  if (isset($_GET['Type'])) {
+    $SessionWithHabitica = new Habitica($_COOKIE['APIUser'],$_COOKIE['APIToken']);
+    $Abfrage  = $SessionWithHabitica->userTasks($_GET['Type']);
+  }else {
+    // Wenn nicht Standart Aufgaben Anzeigen
+    $SessionWithHabitica = new Habitica($_COOKIE['APIUser'],$_COOKIE['APIToken']);
+    $Abfrage  = $SessionWithHabitica->userTasks('todos');
+  }
+  //Abfragen und Anzahl der Aufgaben Zählen
+  $AnzahlArrayObjecte = count ($Abfrage["habitRPGData"]["data"]);
+}
 //Datenmüll und Anleitungen
 
 //Kompletten Array Inhalt Hässlich ausgeben
@@ -30,9 +65,6 @@ $Abfrage  = $SessionWithHabitica->userTasks('todos');
 // $interval = $datetime1->diff($datetime2);
 // echo $interval->format('%R%a days');
 
-//Abfragen und Anzahl der Aufgaben Zählen
-$AnzahlArrayObjecte = count ($Abfrage["habitRPGData"]["data"]);
-
 
 //Nur Ausführen wenn das Formular Abgesendet wurde
 if (isset($_POST["formsend"])) {
@@ -40,12 +72,21 @@ if (isset($_POST["formsend"])) {
   for ($i=0; $i < $AnzahlArrayObjecte; $i++) {
     //Wenn Feld Angeharkt ist, Aufgaber in Habitica Abharken
     if (isset($_POST[$Abfrage["habitRPGData"]["data"][$i]["_id"]])){
-      $aufgabenarray = ["taskId" =>  $Abfrage["habitRPGData"]["data"][$i]["_id"], "direction" => "up"];
-      $SessionWithHabitica->taskScoring($aufgabenarray);
+      if ($_POST[$Abfrage["habitRPGData"]["data"][$i]["_id"]] == "up") {
+        $aufgabenarray = ["taskId" =>  $Abfrage["habitRPGData"]["data"][$i]["_id"], "direction" => "up"];
+        $SessionWithHabitica->taskScoring($aufgabenarray);
+      }elseif ($_POST[$Abfrage["habitRPGData"]["data"][$i]["_id"]] == "down") {
+        $aufgabenarray = ["taskId" =>  $Abfrage["habitRPGData"]["data"][$i]["_id"], "direction" => "down"];
+        $SessionWithHabitica->taskScoring($aufgabenarray);
+      }else {
+        $aufgabenarray = ["taskId" =>  $Abfrage["habitRPGData"]["data"][$i]["_id"], "direction" => "up"];
+        $SessionWithHabitica->taskScoring($aufgabenarray);
+      }
+
     }
   }
   //Array Daten nach Durchlauf der Aufgaben Aktualisieren
-  $Abfrage  = $SessionWithHabitica->userTasks('todos');
+  $Abfrage  = $SessionWithHabitica->userTasks($_GET['Type']);
   $AnzahlArrayObjecte = count ($Abfrage["habitRPGData"]["data"]);
   $Notification = true;
   $NotificationText = "Ihre Daten wurden erfolgreich übertragen";
@@ -73,7 +114,6 @@ else {
   $Notification = false;
 }
 
-
 $AktuellesDatum  = date("d.m.Y");
 $Overdue = false;
 
@@ -95,18 +135,31 @@ $Overdue = false;
 </head>
 
 <body>
+
 <script>
 //Javaskript für Popover Laden
   $(function () {
   $('[data-toggle="popover"]').popover()
   })
 </script>
-<div class="row d-flex justify-content-center container">
+
+<div class="row d-flex justify-content-left container">
     <div class="col-md-8">
-      <form action="/index.php" method="post">
+      <form action="<?php if (isset($_GET['Type'])){ echo "index.php?Type=".$_GET['Type'];} else { echo "index.php";} ?>" method="post">
         <div class="card-hover-shadow-2x mb-3 card">
             <div class="card-header-tab card-header">
-                <div class="card-header-title font-size-lg text-capitalize font-weight-normal"><i class="fa fa-tasks"></i>&nbsp;Task Lists</div>
+                <ul class="nav nav-tabs card-header-tabs">
+                  <li class="nav-item">
+                    <a class="nav-link <?php if (isset($_GET['Type']) && $_GET['Type'] == "todos") {echo "active";} ?>" href="index.php?Type=todos"><i class="fa fa-tasks"></i>&nbsp;ToDos</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link <?php if (isset($_GET['Type']) && $_GET['Type'] == "dailys") {echo "active";} ?>" href="index.php?Type=dailys"><i class="fa fa-calendar-check-o"></i>&nbsp;Dailys</a>
+
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link <?php if (isset($_GET['Type']) && $_GET['Type'] == "habits") {echo "active";} ?>" href="index.php?Type=habits"><i class="fa fa-bolt"></i>&nbsp;Habits</a>
+                  </li>
+                </ul>
             </div>
             <?php
             if ($Notification) {
@@ -114,186 +167,18 @@ $Overdue = false;
               echo $NotificationText;
               echo " </div>";
             }
-             ?>
 
-            <div class="scroll-area-sm">
-                <perfect-scrollbar class="ps-show-limits">
-                    <div style="position: static;" class="ps ps--active-y">
-                        <div class="ps-content">
-                            <ul class=" list-group list-group-flush">
+              //Check ob Benutzer Angemeldet ist, wenn nicht Login laden
+              if (isset($_GET['Page']) && $_GET['Page'] == "addtask") {
+                include 'addtask.php';
+              }elseif (isset($_COOKIE['LoggedIn'])) {
+                include 'tasks.php';
+              }
+              else {
+                include 'login.php';
+              }
+    ?>
 
-                              <?php
-                              for ($i=0; $i < $AnzahlArrayObjecte; $i++) {
-
-                                //Checken ob das Key im Array Existert
-                                if (isset($Abfrage["habitRPGData"]["data"][$i]["date"])){
-                                  //Denn Schauen ob etwas drinnen steht
-                                  if ($Abfrage["habitRPGData"]["data"][$i]["date"]){
-                                    //Dateum Umwandeln
-                                    $originalDate = $Abfrage["habitRPGData"]["data"][$i]["date"];
-                                    $newDate = date("d.m.Y", strtotime($originalDate));
-                                    if ($AktuellesDatum > $newDate) {
-                                      $Overdue = true;
-                                    }
-                                  }else {
-                                    $newDate = "";
-                                    $Overdue = false;
-                                  }
-                                }else {
-                                  $newDate = "";
-                                  $Overdue = false;
-                                }
-
-                              echo "                                <li class=\"list-group-item\">\n";
-
-
-                              //Berechnung wann die Aufgabe erstellt wurde und wieviele Tage sie schon existiert
-                              $Erstelldatum = $Abfrage["habitRPGData"]["data"][$i]["createdAt"];
-                              //Convertieren das Erstellungdatum aus Array nach DateTime PHP
-                              $Erstelldatum = date("d-m-Y", strtotime($Erstelldatum));
-                              $datetime1 = new DateTime("now");
-                              $datetime2 = DateTime::createFromFormat('d-m-Y', $Erstelldatum);
-                              //Daten Vergleichen und Anzahl der Tage herausfinden
-                              $interval = $datetime2->diff($datetime1);
-                              //Tage Speichern
-                              $Tage = $interval->format('%R%a');
-                              if ($Tage < 3) {
-                                    echo "<div class=\"todo-indicator bg-success\"></div>\n";
-                              }else if ($Tage >= 3 && $Tage < 5) {
-                                echo "<div class=\"todo-indicator bg-primary\"></div>\n";
-                              }elseif ($Tage >= 5 && $Tage < 7) {
-                                echo "<div class=\"todo-indicator bg-warning\"></div>\n";
-                              }elseif ($Tage >= 7) {
-                                echo "<div class=\"todo-indicator bg-danger\"></div>\n";
-                              }
-
-
-                              echo "                                    <div class=\"widget-content p-0\">\n";
-                              echo "                                        <div class=\"widget-content-wrapper\">\n";
-                              echo "                                            <div class=\"widget-content-left mr-2\">\n";
-                              echo "                                                <div class=\"custom-checkbox custom-control\"> <input class=\"custom-control-input\" id=\"".$Abfrage["habitRPGData"]["data"][$i]["_id"]."\" type=\"checkbox\" name=\"".$Abfrage["habitRPGData"]["data"][$i]["_id"]."\" value=\"".$Abfrage["habitRPGData"]["data"][$i]["_id"]."\"><label class=\"custom-control-label\" for=\"".$Abfrage["habitRPGData"]["data"][$i]["_id"]."\"> </label> </div>\n";
-                              echo "                                            </div>\n";
-                              echo "                                            <div class=\"widget-content-left\">\n";
-                              echo "                                                <div class=\"widget-heading\">".$Abfrage["habitRPGData"]["data"][$i]["text"];
-                              if ($Overdue) {
-                              echo "<div class=\"badge badge-danger ml-2\">Overdue</div>";
-                              }
-
-                              echo "                                                </div>\n";
-                              echo "                                                <div class=\"widget-subheading\"><i>".$newDate."</i></div>\n";
-                              echo "                                            </div>\n";
-                              //Checken ob Text in der Aufgabe Hinterlegt und wenn ja als Popover Anzeigen
-                              if ($Abfrage["habitRPGData"]["data"][$i]["notes"]) {
-                                echo "<div class=\"widget-content-right\"> <button type=\"button\" class=\"border-0 btn-transition btn btn-outline-success\"  data-container=\"body\" data-toggle=\"popover\" data-placement=\"left\" data-content=\"".$Abfrage["habitRPGData"]["data"][$i]["notes"]."\"> <i class=\"fa fa-file\"></i></button> <button class=\"border-0 btn-transition btn btn-outline-danger\"> <i class=\"fa fa-trash\"></i> </button> </div>\n";
-                              }else {
-                                echo "<div class=\"widget-content-right\"><button class=\"border-0 btn-transition btn btn-outline-danger\"> <i class=\"fa fa-trash\"></i> </button> </div>\n";
-                              }
-                              echo "                                        </div>\n";
-                              echo "                                    </div>\n";
-                              echo "                                </li>\n";
-                              }
-                               ?>
-                                <li class="list-group-item">
-                                    <div class="todo-indicator bg-focus"></div>
-                                    <div class="widget-content p-0">
-                                        <div class="widget-content-wrapper">
-                                            <div class="widget-content-left mr-2">
-                                                <div class="custom-checkbox custom-control"><input class="custom-control-input" id="exampleCustomCheckbox1" type="checkbox"><label class="custom-control-label" for="exampleCustomCheckbox1">&nbsp;</label></div>
-                                            </div>
-                                            <div class="widget-content-left">
-                                                <div class="widget-heading">Make payment to Bluedart</div>
-                                                <div class="widget-subheading">
-                                                    <div>By Johnny <div class="badge badge-pill badge-info ml-2">NEW</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="widget-content-right"> <button class="border-0 btn-transition btn btn-outline-success"> <i class="fa fa-check"></i></button> <button class="border-0 btn-transition btn btn-outline-danger"> <i class="fa fa-trash"></i> </button> </div>
-                                        </div>
-                                    </div>
-                                </li>
-                                <li class="list-group-item">
-                                    <div class="todo-indicator bg-primary"></div>
-                                    <div class="widget-content p-0">
-                                        <div class="widget-content-wrapper">
-                                            <div class="widget-content-left mr-2">
-                                                <div class="custom-checkbox custom-control"><input class="custom-control-input" id="exampleCustomCheckbox4" type="checkbox"><label class="custom-control-label" for="exampleCustomCheckbox4">&nbsp;</label></div>
-                                            </div>
-                                            <div class="widget-content-left flex2">
-                                                <div class="widget-heading">Office rent </div>
-                                                <div class="widget-subheading">By Samino!</div>
-                                            </div>
-                                            <div class="widget-content-right"> <button class="border-0 btn-transition btn btn-outline-success"> <i class="fa fa-check"></i></button> <button class="border-0 btn-transition btn btn-outline-danger"> <i class="fa fa-trash"></i> </button> </div>
-                                        </div>
-                                    </div>
-                                </li>
-                                <li class="list-group-item">
-                                    <div class="todo-indicator bg-info"></div>
-                                    <div class="widget-content p-0">
-                                        <div class="widget-content-wrapper">
-                                            <div class="widget-content-left mr-2">
-                                                <div class="custom-checkbox custom-control"><input class="custom-control-input" id="exampleCustomCheckbox2" type="checkbox"><label class="custom-control-label" for="exampleCustomCheckbox2">&nbsp;</label></div>
-                                            </div>
-                                            <div class="widget-content-left">
-                                                <div class="widget-heading">Office grocery shopping</div>
-                                                <div class="widget-subheading">By Tida</div>
-                                            </div>
-                                            <div class="widget-content-right"> <button class="border-0 btn-transition btn btn-outline-success"> <i class="fa fa-check"></i></button> <button class="border-0 btn-transition btn btn-outline-danger"> <i class="fa fa-trash"></i> </button> </div>
-                                        </div>
-                                    </div>
-                                </li>
-                                <li class="list-group-item">
-                                    <div class="todo-indicator bg-success"></div>
-                                    <div class="widget-content p-0">
-                                        <div class="widget-content-wrapper">
-                                            <div class="widget-content-left mr-2">
-                                                <div class="custom-checkbox custom-control"><input class="custom-control-input" id="exampleCustomCheckbox3" type="checkbox"><label class="custom-control-label" for="exampleCustomCheckbox3">&nbsp;</label></div>
-                                            </div>
-                                            <div class="widget-content-left flex2">
-                                                <div class="widget-heading">Ask for Lunch to Clients</div>
-                                                <div class="widget-subheading">By Office Admin</div>
-                                            </div>
-                                            <div class="widget-content-right"> <button class="border-0 btn-transition btn btn-outline-success"> <i class="fa fa-check"></i></button> <button class="border-0 btn-transition btn btn-outline-danger"> <i class="fa fa-trash"></i> </button> </div>
-                                        </div>
-                                    </div>
-                                </li>
-                                <li class="list-group-item">
-                                    <div class="todo-indicator bg-success"></div>
-                                    <div class="widget-content p-0">
-                                        <div class="widget-content-wrapper">
-                                            <div class="widget-content-left mr-2">
-                                                <div class="custom-checkbox custom-control"><input class="custom-control-input" id="exampleCustomCheckbox10" type="checkbox"><label class="custom-control-label" for="exampleCustomCheckbox10">&nbsp;</label></div>
-                                            </div>
-                                            <div class="widget-content-left flex2">
-                                                <div class="widget-heading">Client Meeting at 11 AM</div>
-                                                <div class="widget-subheading">By CEO</div>
-                                            </div>
-                                            <div class="widget-content-right"> <button class="border-0 btn-transition btn btn-outline-success"> <i class="fa fa-check"></i></button> <button class="border-0 btn-transition btn btn-outline-danger"> <i class="fa fa-trash"></i> </button> </div>
-                                        </div>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </perfect-scrollbar>
-            </div>
-            <input type="hidden" name="formsend" value="true">
-            <div class="d-block text-right card-footer"><button type="submit" class="mr-2 btn btn-success" >Send</button><button type="button" class="btn btn-primary" data-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">Add Task</button></div>
-         </form>
-            <div class="collapse" id="collapseExample">
-              <div class="card card-body">
-                <form action="/index.php" method="post">
-                  <div class="form-group">
-                    <label for="Title">ToDo Title</label>
-                    <input type="text" name="Title" class="form-control" id="Title">
-                  </div>
-                  <div class="form-group">
-                    <label for="Notes">ToDo Notes</label>
-                    <textarea class="form-control" id="Notes" rows="3" name="Notes"></textarea>
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-block">Create New Task</button>
-                </form>
-              </div>
-            </div>
         </div>
     </div>
 </div>
